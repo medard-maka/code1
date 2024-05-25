@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Lecteur RFID</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .card-info {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            width: 300px;
+        }
+        
+        .input-group {
+            margin-bottom: 10px;
+        }
+        
+        .input-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        
+        #add-button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        #add-button:hover {
+            background-color: #45a049;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+        }
+        
+        table th,
+        table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        table th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Lecteur RFID</h1>
+    <div class="card-info">
+        <p>Présentez une carte RFID pour ajouter son ID :</p>
+        <div id="card-id"></div>
+        <div class="input-group">
+            <label for="name-input">Nom :</label>
+            <input type="text" id="name-input" placeholder="Entrez le nom"> </div>
+        <div class="input-group">
+            <label for="age-input">Frais :</label>
+            <input type="number" id="age-input" placeholder="Entrez le montant"> </div>
+        <button id="add-button">Ajouter la carte</button> </div>
+    <table id="card-table">
+        <thead>
+            <tr>
+                <th>ID de la Carte</th>
+                <th>Nom</th>
+                <th>Frais</th>
+                <th>Heure</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody id="card-table-body"> </tbody>
+    </table>
+
+    <script>
+        let cardData = [];
+
+        function updateCardID(cardID) {
+            document.getElementById("card-id").textContent = cardID;
+        }
+
+        function addCardToTable(cardID, name, age) {
+            const existingIndex = cardData.findIndex(item => item.cardID === cardID);
+            if (existingIndex === -1) {
+                cardData.push({
+                    cardID,
+                    name,
+                    age,
+                    timestamp: new Date() // Enregistrer l'heure d'ajout
+                });
+                insertRowAtTop(cardID, name, age);
+            } else {
+                cardData[existingIndex].name = name;
+                cardData[existingIndex].age = age;
+                updateTableRow(existingIndex);
+            }
+        }
+
+        function insertRowAtTop(cardID, name, age) {
+            const row = document.createElement("tr");
+            const idCell = document.createElement("td");
+            const nameCell = document.createElement("td");
+            const ageCell = document.createElement("td");
+            const timeCell = document.createElement("td");
+            const dateCell = document.createElement("td");
+
+            idCell.textContent = cardID;
+            nameCell.textContent = name;
+            ageCell.textContent = age;
+
+            // Ajoutez l'heure et la date
+            const timestamp = cardData[cardData.length - 1].timestamp;
+            timeCell.textContent = timestamp.toLocaleTimeString();
+            dateCell.textContent = timestamp.toLocaleDateString();
+
+            row.appendChild(idCell);
+            row.appendChild(nameCell);
+            row.appendChild(ageCell);
+            row.appendChild(timeCell);
+            row.appendChild(dateCell);
+
+            const tableBody = document.getElementById("card-table-body");
+            tableBody.insertBefore(row, tableBody.firstChild);
+        }
+
+        function updateTableRow(index) {
+            const rows = document.getElementById("card-table-body").getElementsByTagName("tr");
+            if (index < rows.length) {
+                rows[index].children[1].textContent = cardData[index].name;
+                rows[index].children[2].textContent = cardData[index].age;
+
+                // Mettez à jour l'heure et la date
+                const timestamp = cardData[index].timestamp;
+                rows[index].children[3].textContent = timestamp.toLocaleTimeString();
+                rows[index].children[4].textContent = timestamp.toLocaleDateString();
+            }
+        }
+
+        document.getElementById("add-button").addEventListener("click", function() {
+            const currentCardID = document.getElementById("card-id").textContent;
+            const nameInput = document.getElementById("name-input");
+            const ageInput = document.getElementById("age-input");
+            addCardToTable(currentCardID, nameInput.value, parseInt(ageInput.value));
+            nameInput.value = "";
+            ageInput.value = "";
+        });
+
+        setInterval(function() {
+            fetch("/readRFID")
+                .then(response => response.text())
+                .then(cardID => {
+                    updateCardID(cardID);
+                });
+        }, 1000);
+    </script>
+</body>
+
+</html>
